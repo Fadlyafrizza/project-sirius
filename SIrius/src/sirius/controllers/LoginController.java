@@ -11,7 +11,12 @@ import sirius.views.DashboardView;
 import sirius.views.auth.LoginView;
 import sirius.views.auth.RegisterView;
 
-import java.awt.event.MouseAdapter;
+import javax.swing.*;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
+import java.awt.event.*;
 import java.sql.SQLException;
 
 public class LoginController {
@@ -23,6 +28,8 @@ public class LoginController {
     }
 
     private void initialize() {
+        setupEmailField();
+
         loginView.getLoginButton().addActionListener(event -> handleLogin());
 
         loginView.getRegisterLink().addMouseListener(new MouseAdapter() {
@@ -79,6 +86,86 @@ public class LoginController {
     private void handleRegisterLink() {
         new RegisterView().setVisible(true);
         loginView.dispose();
+    }
+
+    private void setupEmailField() {
+        JTextField emailField = loginView.getEmailField();
+        // Set teks awal
+        emailField.setText(Constant.SUFFIX_EMAIL);
+        // Tempatkan kursor di depan suffix
+        emailField.setCaretPosition(0);
+
+        // Tambahkan DocumentFilter untuk mencegah penghapusan / modifikasi pada suffix email
+        ((AbstractDocument) emailField.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
+                // Cegah penambahan teks di area suffix
+                if (offset <= fb.getDocument().getLength() - Constant.SUFFIX_EMAIL.length()) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+                // Cegah penghapusan atau penggantian di area suffix
+                if (offset < fb.getDocument().getLength() - Constant.SUFFIX_EMAIL.length() + 1) {
+                    int maxReplaceLength = Math.min(length, (fb.getDocument().getLength() - Constant.SUFFIX_EMAIL.length()) - offset);
+                    if (maxReplaceLength >= 0) {
+                        super.replace(fb, offset, maxReplaceLength, text, attrs);
+                    }
+                }
+            }
+
+            @Override
+            public void remove(FilterBypass fb, int offset, int length) throws BadLocationException {
+                // Cegah penghapusan di area suffix
+                if (offset < fb.getDocument().getLength() - Constant.SUFFIX_EMAIL.length()) {
+                    int maxRemoveLength = Math.min(length, (fb.getDocument().getLength() - Constant.SUFFIX_EMAIL.length()) - offset);
+                    super.remove(fb, offset, maxRemoveLength);
+                }
+            }
+        });
+
+        emailField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                int suffixLength = Constant.SUFFIX_EMAIL.length();
+                int textLength = emailField.getDocument().getLength();
+                int maxCaretPosition = Math.max(0, textLength - suffixLength);
+
+                // Memastikan caret tidak melebihi batas editable
+                if (emailField.getCaretPosition() > maxCaretPosition) {
+                    emailField.setCaretPosition(maxCaretPosition);
+                }
+            }
+        });
+
+        emailField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                int textLength = emailField.getDocument().getLength();
+                int maxCaret = Math.max(0, textLength - Constant.SUFFIX_EMAIL.length());
+                emailField.setCaretPosition(maxCaret);
+            }
+        });
+
+        emailField.addCaretListener(e -> {
+            int editableLength = emailField.getDocument().getLength() - Constant.SUFFIX_EMAIL.length();
+            if (emailField.getCaretPosition() > editableLength) {
+                emailField.setCaretPosition(editableLength);
+            }
+        });
+        emailField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                int suffixStart = emailField.getDocument().getLength() - Constant.SUFFIX_EMAIL.length();
+
+                if (e.getKeyCode() == KeyEvent.VK_RIGHT &&
+                        emailField.getCaretPosition() >= suffixStart) {
+                    e.consume(); // blokir gerakan ke kanan
+                }
+            }
+        });
     }
 
 }
