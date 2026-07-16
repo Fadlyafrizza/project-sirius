@@ -8,7 +8,6 @@ import sirius.views.components.Navbar;
 import sirius.views.components.NavigationItem;
 
 import javax.swing.*;
-import javax.swing.plaf.basic.BasicTabbedPaneUI;
 import java.awt.*;
 import java.util.EnumMap;
 import java.util.Map;
@@ -18,7 +17,8 @@ public class DashboardView extends Frame {
     final private Mahasiswa mahasiswa;
 
     private Navbar navbar;
-    private JTabbedPane tabbedPane;
+    private JPanel contentPanel; // Panel utama yang menggunakan CardLayout
+    private CardLayout cardLayout;
 
     private NavItem navDashboard;
     private NavItem navSemuaTugas;
@@ -26,12 +26,9 @@ public class DashboardView extends Frame {
     private NavItem navBuatTugasBaru;
     private NavItem navAnggotaKelompok;
     private NavItem navPembagianSesi;
+    private NavItem navMahasiswa;
     private NavItem navLogout;
 
-    /**
-     * Mapping dari NavigationItem enum ke NavItem instance.
-     * Digunakan oleh controller untuk sinkronisasi tab → navbar.
-     */
     private final Map<NavigationItem, NavItem> navItemMap = new EnumMap<>(NavigationItem.class);
 
     public DashboardView(Mahasiswa mahasiswa) {
@@ -48,7 +45,7 @@ public class DashboardView extends Frame {
         mainPanel.setBackground(Constant.SNOW_COLOR);
 
         mainPanel.add(createNavbar(), BorderLayout.NORTH);
-        mainPanel.add(createTabbedPane(), BorderLayout.CENTER);
+        mainPanel.add(createContentPanel(), BorderLayout.CENTER);
 
         return mainPanel;
     }
@@ -81,83 +78,37 @@ public class DashboardView extends Frame {
         navItemMap.put(NavigationItem.ANGGOTA_KELOMPOK, navAnggotaKelompok);
         navItemMap.put(NavigationItem.PEMBAGIAN_SESI, navPembagianSesi);
 
+        navMahasiswa = new NavItem("Mahasiswa");
+        navbar.addItem(navMahasiswa);
+        navItemMap.put(NavigationItem.MAHASISWA_PAGE, navMahasiswa);
+
         navLogout = new NavItem("Logout");
         navbar.addItem(navLogout);
 
         return navbar;
     }
 
-    /**
-     * Membuat JTabbedPane dengan tab header disembunyikan.
-     * Tab header tidak diperlukan karena navigasi dilakukan melalui custom Navbar.
-     */
-    private JTabbedPane createTabbedPane() {
-        tabbedPane = new JTabbedPane();
-        tabbedPane.setBackground(Constant.SNOW_COLOR);
+    private JPanel createContentPanel() {
+        cardLayout = new CardLayout();
+        contentPanel = new JPanel(cardLayout);
+        contentPanel.setBackground(Constant.SNOW_COLOR);
 
-        // Sembunyikan tab header bawaan — kita pakai Navbar sebagai penggantinya
-        tabbedPane.setUI(new BasicTabbedPaneUI() {
-            @Override
-            protected int calculateTabAreaHeight(int tabPlacement, int runCount, int maxTabHeight) {
-                return 0;
-            }
-
-            @Override
-            protected void paintTabArea(Graphics g, int tabPlacement, int selectedIndex) {
-                // Tidak menggambar tab area
-            }
-        });
-
-        // Tambahkan tab sesuai urutan NavigationItem enum
+        // Tambahkan semua panel ke CardLayout
         for (NavigationItem nav : NavigationItem.values()) {
-            tabbedPane.addTab(nav.getLabel(), createPagePlaceholder(nav));
+            contentPanel.add(nav.createPanel(mahasiswa.getNama()), nav.name());
         }
 
-        return tabbedPane;
+        return contentPanel;
     }
 
     /**
-     * Membuat placeholder panel untuk setiap halaman.
-     * Nanti bisa diganti dengan panel view yang sebenarnya.
+     * Menampilkan panel yang sesuai berdasarkan enum NavigationItem.
+     * @param nav Enum item yang akan ditampilkan.
      */
-    private JPanel createPagePlaceholder(NavigationItem nav) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Constant.SNOW_COLOR);
-
-        String displayText = nav == NavigationItem.DASHBOARD
-                ? "Selamat datang, " + mahasiswa.getNama()
-                : "Halaman " + nav.getLabel();
-
-        JLabel label = new JLabel(displayText);
-        label.setFont(new Font("SansSerif", Font.BOLD, 20));
-        label.setHorizontalAlignment(SwingConstants.CENTER);
-        panel.add(label, BorderLayout.CENTER);
-
-        return panel;
+    public void showPage(NavigationItem nav) {
+        cardLayout.show(contentPanel, nav.name());
     }
 
-    // === Getters untuk Controller ===
-
-    public Navbar getNavbar() {
-        return navbar;
-    }
-
-    public JTabbedPane getTabbedPane() {
-        return tabbedPane;
-    }
-
-    public NavItem getNavLogout() {
-        return navLogout;
-    }
-
-    public Mahasiswa getMahasiswa() {
-        return mahasiswa;
-    }
-
-    /**
-     * Cari NavigationItem berdasarkan NavItem instance.
-     * @return NavigationItem yang cocok, atau null jika NavItem bukan halaman (misalnya Logout).
-     */
     public NavigationItem findNavigationItem(NavItem navItem) {
         for (Map.Entry<NavigationItem, NavItem> entry : navItemMap.entrySet()) {
             if (entry.getValue() == navItem) {
@@ -167,11 +118,19 @@ public class DashboardView extends Frame {
         return null;
     }
 
-    /**
-     * Cari NavItem berdasarkan NavigationItem enum.
-     * Digunakan controller untuk sinkronisasi tab index → navbar item.
-     */
     public NavItem findNavItem(NavigationItem navigationItem) {
         return navItemMap.get(navigationItem);
+    }
+
+    public Navbar getNavbar() {
+        return navbar;
+    }
+
+    public NavItem getNavLogout() {
+        return navLogout;
+    }
+
+    public Mahasiswa getMahasiswa() {
+        return mahasiswa;
     }
 }

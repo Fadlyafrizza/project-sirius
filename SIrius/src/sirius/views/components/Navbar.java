@@ -18,7 +18,7 @@ public class Navbar extends JPanel {
     private Consumer<NavItem> onNavItemClick;
 
     public Navbar() {
-        setLayout(new FlowLayout(FlowLayout.LEFT, 0, 6));
+        setLayout(new FlowLayout(FlowLayout.LEFT, 10, 6));
         setBackground(Constant.SNOW_COLOR);
         Border borderBottom = BorderFactory.createMatteBorder(0, 0, 1, 0, Constant.ZINC_COLOR);
 
@@ -81,7 +81,7 @@ public class Navbar extends JPanel {
         for (NavItem child : parent.getChildren()) {
             JMenuItem menuItem = new JMenuItem(child.getLabel());
             menuItem.setFont(ITEM_FONT);
-            menuItem.setForeground(Constant.ZINC_COLOR);
+            menuItem.setForeground(Constant.SNOW_COLOR);
             menuItem.setBackground(Constant.PRIMARY_COLOR);
             menuItem.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 30));
             menuItem.setOpaque(true);
